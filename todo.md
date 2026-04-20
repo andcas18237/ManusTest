@@ -97,3 +97,27 @@
 - [ ] Creare checkpoint iniziale
 - [ ] Preparare file di configurazione
 - [ ] Documentare istruzioni per produzione
+
+
+## Integrazione Backend per Ricette (NUOVO)
+
+### Database Schema
+- [x] Creare tabella `recipes` con colonne: id, name, prepTime, difficulty, ingredients (JSON), instructions (JSON)
+- [x] Aggiungere indici per ricerche veloci
+
+### API Endpoints
+- [x] GET /api/recipes - lista tutte le ricette
+- [x] GET /api/recipes/:id - dettagli ricetta
+- [x] POST /api/recipes - crea nuova ricetta
+- [x] PUT /api/recipes/:id - modifica ricetta
+- [x] DELETE /api/recipes/:id - elimina ricetta
+- [x] GET /api/recipes/search?q=... - ricerca ricette
+
+### Frontend Integration
+- [x] Modificare `app/(tabs)/index.tsx` per caricare da API
+- [x] Implementare useEffect con fetch/axios
+- [x] Aggiungere error handling e loading states
+- [x] Testare su Expo Go
+
+### Data Population
+- [x] Popolare database con 6 ricette di esempio

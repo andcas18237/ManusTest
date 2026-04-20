@@ -25,4 +25,17 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+// Recipes table
+export const recipes = mysqlTable("recipes", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  prepTime: int("prepTime").notNull(), // in minutes
+  difficulty: mysqlEnum("difficulty", ["facile", "media", "difficile"]).notNull(),
+  ingredients: text("ingredients").notNull(), // JSON string
+  instructions: text("instructions").notNull(), // JSON string
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Recipe = typeof recipes.$inferSelect;
+export type InsertRecipe = typeof recipes.$inferInsert;

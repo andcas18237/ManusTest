@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, recipes, InsertRecipe, Recipe } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,92 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Recipe queries
+export async function getAllRecipes(): Promise<Recipe[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get recipes: database not available");
+    return [];
+  }
+
+  try {
+    return await db.select().from(recipes);
+  } catch (error) {
+    console.error("[Database] Failed to get recipes:", error);
+    return [];
+  }
+}
+
+export async function getRecipeById(id: number): Promise<Recipe | undefined> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get recipe: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db.select().from(recipes).where(eq(recipes.id, id)).limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    console.error("[Database] Failed to get recipe:", error);
+    return undefined;
+  }
+}
+
+export async function searchRecipes(query: string): Promise<Recipe[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot search recipes: database not available");
+    return [];
+  }
+
+  try {
+    return await db.select().from(recipes).where(like(recipes.name, `%${query}%`));
+  } catch (error) {
+    console.error("[Database] Failed to search recipes:", error);
+    return [];
+  }
+}
+
+export async function createRecipe(data: InsertRecipe): Promise<number> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    const result = await db.insert(recipes).values(data);
+    return Number((result as any).insertId || 0);
+  } catch (error) {
+    console.error("[Database] Failed to create recipe:", error);
+    throw error;
+  }
+}
+
+export async function updateRecipe(id: number, data: Partial<InsertRecipe>): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db.update(recipes).set(data).where(eq(recipes.id, id));
+  } catch (error) {
+    console.error("[Database] Failed to update recipe:", error);
+    throw error;
+  }
+}
+
+export async function deleteRecipe(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db.delete(recipes).where(eq(recipes.id, id));
+  } catch (error) {
+    console.error("[Database] Failed to delete recipe:", error);
+    throw error;
+  }
+}

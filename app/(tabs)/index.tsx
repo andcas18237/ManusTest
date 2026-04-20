@@ -1,47 +1,41 @@
-import { ScrollView, Text, View, FlatList, Pressable, TextInput } from "react-native";
+import { ScrollView, Text, View, FlatList, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 
 interface Recipe {
   id: number;
   name: string;
   prepTime: number;
   difficulty: "facile" | "media" | "difficile";
-  image?: string;
+  ingredients: string; // JSON string
+  instructions: string; // JSON string
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export default function RecipesScreen() {
   const router = useRouter();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  // Dati di esempio
-  const sampleRecipes: Recipe[] = [
-    { id: 1, name: "Pasta Carbonara", prepTime: 20, difficulty: "facile" },
-    { id: 2, name: "Risotto ai Funghi", prepTime: 35, difficulty: "media" },
-    { id: 3, name: "Osso Buco", prepTime: 120, difficulty: "difficile" },
-    { id: 4, name: "Tiramisu", prepTime: 30, difficulty: "media" },
-    { id: 5, name: "Lasagne", prepTime: 90, difficulty: "difficile" },
-    { id: 6, name: "Insalata Caprese", prepTime: 10, difficulty: "facile" },
-  ];
+  // Fetch all recipes from API
+  const { data: recipes, isLoading, error } = trpc.recipes.list.useQuery();
 
+  // Update filtered recipes when recipes or search query changes
   useEffect(() => {
-    // Simulare caricamento da API
-    setRecipes(sampleRecipes);
-    setFilteredRecipes(sampleRecipes);
-    setLoading(false);
-  }, []);
+    if (recipes) {
+      const filtered = recipes.filter((recipe) =>
+        recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRecipes(filtered);
+    }
+  }, [recipes, searchQuery]);
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    const filtered = recipes.filter((recipe) =>
-      recipe.name.toLowerCase().includes(text.toLowerCase())
-    );
-    setFilteredRecipes(filtered);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -98,13 +92,21 @@ export default function RecipesScreen() {
         />
       </View>
 
-      {loading ? (
+      {isLoading ? (
         <View className="flex-1 justify-center items-center">
-          <Text className="text-muted">Caricamento...</Text>
+          <ActivityIndicator size="large" color="#0a7ea4" />
+          <Text className="text-muted mt-2">Caricamento ricette...</Text>
+        </View>
+      ) : error ? (
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-error text-center">Errore nel caricamento delle ricette</Text>
+          <Text className="text-muted text-center mt-2 text-xs">{error.message}</Text>
         </View>
       ) : filteredRecipes.length === 0 ? (
         <View className="flex-1 justify-center items-center">
-          <Text className="text-muted text-center">Nessuna ricetta trovata</Text>
+          <Text className="text-muted text-center">
+            {searchQuery ? "Nessuna ricetta trovata" : "Nessuna ricetta disponibile"}
+          </Text>
         </View>
       ) : (
         <FlatList
