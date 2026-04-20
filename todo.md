@@ -121,3 +121,22 @@
 
 ### Data Population
 - [x] Popolare database con 6 ricette di esempio
+
+
+## Aggiunta Funzionalità Creazione Ricette
+
+### Frontend
+- [x] Creare schermata add-recipe con form completo
+- [x] Aggiungere pulsante "+" nella schermata Ricette
+- [x] Implementare input dinamici per ingredienti
+- [x] Implementare input dinamici per istruzioni
+- [x] Aggiungere validazione form
+- [x] Implementare mutazione tRPC per creare ricetta
+- [x] Aggiungere loading state durante il salvataggio
+- [x] Mostrare messaggio di successo/errore
+- [x] Aggiornare lista ricette dopo creazione
+
+### Testing
+- [ ] Testare creazione ricetta su Expo Go
+- [ ] Verificare che i dati vengono salvati nel database
+- [ ] Verificare che la lista si aggiorna automaticamente

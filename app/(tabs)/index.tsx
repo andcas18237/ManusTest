@@ -82,7 +82,15 @@ export default function RecipesScreen() {
   return (
     <ScreenContainer className="px-4 py-4">
       <View className="mb-4">
-        <Text className="text-3xl font-bold text-foreground mb-4">Ricette</Text>
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-3xl font-bold text-foreground">Ricette</Text>
+          <Pressable
+            onPress={() => router.push("/add-recipe")}
+            className="bg-primary rounded-full w-12 h-12 justify-center items-center"
+          >
+            <Text className="text-white text-2xl font-bold">+</Text>
+          </Pressable>
+        </View>
         <TextInput
           placeholder="Cerca ricetta..."
           value={searchQuery}
