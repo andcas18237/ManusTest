@@ -140,3 +140,22 @@
 - [ ] Testare creazione ricetta su Expo Go
 - [ ] Verificare che i dati vengono salvati nel database
 - [ ] Verificare che la lista si aggiorna automaticamente
+
+
+## Animated Recipe Cards
+
+### Frontend
+- [x] Creare componente RecipeCard con animazioni
+- [x] Implementare animazioni di scale (0.95) e opacity (0.8)
+- [x] Aggiungere timing di 150ms per feedback istantaneo
+- [x] Design moderno con rounded corners e shadow
+- [x] Aggiungere CTA "Visualizza →" nel footer della card
+- [x] Aggiungere separatore visivo con border-top
+- [x] Aggiungere livello "complesso" alla difficoltà
+
+### Branch & PR
+- [x] Creare branch feature/animated-recipe-cards
+- [x] Fare commit con le modifiche
+- [x] Fare pull request su GitHub
+- [x] Aggiungere commento per il livello "complesso"
+- [x] Fare merge su main
