@@ -28,6 +28,8 @@ export function RecipeCard({ id, name, prepTime, difficulty, onPress }: RecipeCa
         return "bg-warning";
       case "difficile":
         return "bg-error";
+      case "complesso":
+        return "bg-error";
       default:
         return "bg-muted";
     }
