@@ -80,7 +80,7 @@ export default function RecipesScreen() {
   );
 
   return (
-    <ScreenContainer className="px-4 py-4">
+    <ScreenContainer className="px-4 py-4" edges={["top", "left", "right", "bottom"]}>
       <View className="mb-4">
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-3xl font-bold text-foreground">Ricette</Text>
@@ -121,8 +121,9 @@ export default function RecipesScreen() {
           data={filteredRecipes}
           renderItem={({ item }) => <RecipeCard recipe={item} />}
           keyExtractor={(item) => item.id.toString()}
-          scrollEnabled={false}
-          contentContainerStyle={{ flexGrow: 1 }}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
     </ScreenContainer>
