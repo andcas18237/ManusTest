@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
+import { RecipeCard } from "@/components/recipe-card";
 
 interface Recipe {
   id: number;
@@ -38,46 +39,12 @@ export default function RecipesScreen() {
     setSearchQuery(text);
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "facile":
-        return "bg-success";
-      case "media":
-        return "bg-warning";
-      case "difficile":
-        return "bg-error";
-      default:
-        return "bg-muted";
-    }
-  };
-
   const handleRecipePress = (recipeId: number) => {
     router.push({
       pathname: "/recipe-detail",
       params: { id: recipeId.toString() },
     });
   };
-
-  const RecipeCard = ({ recipe }: { recipe: Recipe }) => (
-    <Pressable
-      onPress={() => handleRecipePress(recipe.id)}
-      style={({ pressed }) => [
-        {
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-    >
-      <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
-        <View className="flex-row justify-between items-start mb-2">
-          <Text className="text-lg font-semibold text-foreground flex-1">{recipe.name}</Text>
-          <View className={cn("px-2 py-1 rounded", getDifficultyColor(recipe.difficulty))}>
-            <Text className="text-xs font-medium text-white capitalize">{recipe.difficulty}</Text>
-          </View>
-        </View>
-        <Text className="text-sm text-muted">⏱️ {recipe.prepTime} min</Text>
-      </View>
-    </Pressable>
-  );
 
   return (
     <ScreenContainer className="px-4 py-4" edges={["top", "left", "right", "bottom"]}>
@@ -86,7 +53,7 @@ export default function RecipesScreen() {
           <Text className="text-3xl font-bold text-foreground">Ricette</Text>
           <Pressable
             onPress={() => router.push("/add-recipe")}
-            className="bg-primary rounded-full w-12 h-12 justify-center items-center"
+            className="bg-primary rounded-full w-12 h-12 justify-center items-center shadow-md"
           >
             <Text className="text-white text-2xl font-bold">+</Text>
           </Pressable>
@@ -119,7 +86,15 @@ export default function RecipesScreen() {
       ) : (
         <FlatList
           data={filteredRecipes}
-          renderItem={({ item }) => <RecipeCard recipe={item} />}
+          renderItem={({ item }) => (
+            <RecipeCard
+              id={item.id}
+              name={item.name}
+              prepTime={item.prepTime}
+              difficulty={item.difficulty}
+              onPress={handleRecipePress}
+            />
+          )}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={true}
           nestedScrollEnabled={true}
