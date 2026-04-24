@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { COOKIE_NAME } from "../shared/const";
 import { searchRestaurantsByLocation, filterByPrice, filterByCuisine } from "./overpass";
+import { calculateTravel, getAvailableCities } from "./travels";
 
 export const appRouter = router({
   system: systemRouter,
@@ -126,6 +127,34 @@ export const appRouter = router({
           );
         }
       }),
+  }),
+
+  travels: router({
+    calculate: publicProcedure
+      .input(
+        z.object({
+          departure: z.string().min(1),
+          destination: z.string().min(1),
+          travelType: z.enum(["auto", "treno", "aereo"]),
+        })
+      )
+      .query(async ({ input }) => {
+        try {
+          return await calculateTravel(
+            input.departure,
+            input.destination,
+            input.travelType
+          );
+        } catch (error) {
+          throw new Error(
+            `Errore nel calcolo del viaggio: ${error instanceof Error ? error.message : "Errore sconosciuto"}`
+          );
+        }
+      }),
+
+    availableCities: publicProcedure.query(() => {
+      return getAvailableCities();
+    }),
   }),
 });
 

@@ -1,77 +1,62 @@
-import { ScrollView, Text, View, Pressable, TextInput } from "react-native";
+import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import { skipToken } from "@tanstack/react-query";
 
 interface TravelResult {
   distance: number;
   duration: number;
   cost: number;
   tollCost: number;
+  travelType: "auto" | "treno" | "aereo";
 }
 
 export default function TravelsScreen() {
   const [departure, setDeparture] = useState("");
   const [destination, setDestination] = useState("");
-  const [travelType, setTravelType] = useState("auto");
+  const [travelType, setTravelType] = useState<"auto" | "treno" | "aereo">("auto");
   const [result, setResult] = useState<TravelResult | null>(null);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dati di esempio per calcoli
-  const cityDistances: Record<string, Record<string, number>> = {
-    Milano: { Roma: 570, Firenze: 290, Napoli: 750, Torino: 140 },
-    Roma: { Milano: 570, Firenze: 280, Napoli: 240, Torino: 700 },
-    Firenze: { Milano: 290, Roma: 280, Napoli: 480, Torino: 380 },
-    Napoli: { Milano: 750, Roma: 240, Firenze: 480, Torino: 900 },
-    Torino: { Milano: 140, Roma: 700, Firenze: 380, Napoli: 900 },
-  };
+  // Fetch available cities
+  const { data: availableCities = [] } = trpc.travels.availableCities.useQuery();
 
-  const calculateTravel = () => {
-    const dep = departure.trim();
-    const dest = destination.trim();
-
-    if (!dep || !dest) {
-      alert("Inserisci partenza e destinazione");
-      return;
+  // Calculate travel using tRPC
+  const calculateTravelMutation = trpc.travels.calculate.useQuery(
+    departure && destination
+      ? {
+          departure,
+          destination,
+          travelType,
+        }
+      : skipToken,
+    {
+      enabled: false,
     }
+  );
 
-    const distance = cityDistances[dep]?.[dest];
-    if (!distance) {
-      alert("Rotta non trovata. Prova con: Milano, Roma, Firenze, Napoli, Torino");
-      return;
-    }
-
-    let cost = 0;
-    let tollCost = 0;
-    let duration = 0;
-
-    if (travelType === "auto") {
-      // Costo carburante: ~0.15€/km
-      cost = distance * 0.15;
-      // Pedaggi: ~0.10€/km per autostrada
-      tollCost = distance * 0.1;
-      // Tempo: ~1 ora per 100km
-      duration = Math.round((distance / 100) * 60);
-    } else if (travelType === "treno") {
-      // Costo treno: ~0.08€/km
-      cost = distance * 0.08;
-      tollCost = 0;
-      duration = Math.round((distance / 120) * 60);
-    } else if (travelType === "aereo") {
-      // Costo aereo: base 50€ + 0.05€/km
-      cost = 50 + distance * 0.05;
-      tollCost = 0;
-      // Tempo: 2 ore per volo + 2 ore per check-in
-      duration = 120 + Math.round((distance / 800) * 60);
-    }
-
-    setResult({
-      distance,
-      duration,
-      cost: Math.round(cost * 100) / 100,
-      tollCost: Math.round(tollCost * 100) / 100,
-    });
+  const handleCalculate = async () => {
+    setError(null);
+    setLoading(true);
     setSearched(true);
+
+    try {
+      const response = await calculateTravelMutation.refetch();
+      if (response.data) {
+        setResult(response.data);
+      } else if (response.error) {
+        setError(response.error.message || "Errore nel calcolo del viaggio");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Errore sconosciuto");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTravelTypeLabel = (type: string) => {
@@ -97,30 +82,40 @@ export default function TravelsScreen() {
           <Text className="text-sm font-semibold text-foreground mb-3">Calcola Costo</Text>
 
           <Text className="text-xs text-muted mb-1">Partenza</Text>
-          <TextInput
-            placeholder="Es. Milano"
-            value={departure}
-            onChangeText={setDeparture}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-foreground mb-4"
-            placeholderTextColor="#687076"
-          />
+          <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
+            <Picker
+              selectedValue={departure}
+              onValueChange={(itemValue: string) => setDeparture(itemValue)}
+              style={{ color: "#11181C" }}
+            >
+              <Picker.Item label="Seleziona città..." value="" />
+              {availableCities.map((city: string) => (
+                <Picker.Item key={city} label={city} value={city} />
+              ))}
+            </Picker>
+          </View>
 
           <Text className="text-xs text-muted mb-1">Destinazione</Text>
-          <TextInput
-            placeholder="Es. Roma"
-            value={destination}
-            onChangeText={setDestination}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-foreground mb-4"
-            placeholderTextColor="#687076"
-          />
+          <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
+            <Picker
+              selectedValue={destination}
+              onValueChange={(itemValue: string) => setDestination(itemValue)}
+              style={{ color: "#11181C" }}
+            >
+              <Picker.Item label="Seleziona città..." value="" />
+              {availableCities.map((city: string) => (
+                <Picker.Item key={city} label={city} value={city} />
+              ))}
+            </Picker>
+          </View>
 
           <Text className="text-xs text-muted mb-1">Tipo di viaggio</Text>
           <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
-          <Picker
-            selectedValue={travelType}
-            onValueChange={(itemValue: string) => setTravelType(itemValue)}
-            style={{ color: "#11181C" }}
-          >
+            <Picker
+              selectedValue={travelType}
+              onValueChange={(itemValue: string) => setTravelType(itemValue as "auto" | "treno" | "aereo")}
+              style={{ color: "#11181C" }}
+            >
               <Picker.Item label="Auto" value="auto" />
               <Picker.Item label="Treno" value="treno" />
               <Picker.Item label="Aereo" value="aereo" />
@@ -128,17 +123,32 @@ export default function TravelsScreen() {
           </View>
 
           <Pressable
-            onPress={calculateTravel}
+            onPress={handleCalculate}
+            disabled={!departure || !destination || loading}
             style={({ pressed }) => [
               {
-                opacity: pressed ? 0.8 : 1,
+                opacity: pressed && departure && destination ? 0.8 : 1,
               },
             ]}
-            className="bg-primary rounded-lg py-3 items-center"
+            className={cn(
+              "rounded-lg py-3 items-center",
+              departure && destination ? "bg-primary" : "bg-muted"
+            )}
           >
-            <Text className="text-white font-semibold">Calcola</Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-semibold">Calcola</Text>
+            )}
           </Pressable>
         </View>
+
+        {/* Error Message */}
+        {error && (
+          <View className="bg-error/10 border border-error rounded-lg p-3 mb-4">
+            <Text className="text-error text-sm">{error}</Text>
+          </View>
+        )}
 
         {/* Results Section */}
         {searched && result ? (
@@ -161,11 +171,11 @@ export default function TravelsScreen() {
               <Text className="text-xs text-muted mb-2">💰 Costo totale</Text>
               <Text className="text-3xl font-bold text-foreground">€{result.cost}</Text>
               <Text className="text-xs text-muted mt-2">
-                Tipo: {getTravelTypeLabel(travelType)}
+                Tipo: {getTravelTypeLabel(result.travelType)}
               </Text>
             </View>
 
-            {travelType === "auto" && result.tollCost > 0 && (
+            {result.travelType === "auto" && result.tollCost > 0 && (
               <View className="bg-warning bg-opacity-10 rounded-lg p-3 border border-warning">
                 <Text className="text-xs text-warning font-semibold mb-1">⚠️ Pedaggi</Text>
                 <Text className="text-lg font-bold text-warning">€{result.tollCost}</Text>
@@ -175,17 +185,19 @@ export default function TravelsScreen() {
               </View>
             )}
           </View>
-        ) : searched ? (
+        ) : searched && !result ? (
           <View className="flex-1 justify-center items-center py-8">
             <Text className="text-muted text-center">Errore nel calcolo del viaggio</Text>
           </View>
         ) : (
           <View className="flex-1 justify-center items-center py-8">
             <Text className="text-muted text-center">
-              Inserisci partenza e destinazione per calcolare i costi
+              Seleziona partenza e destinazione per calcolare i costi
             </Text>
             <Text className="text-xs text-muted text-center mt-2">
-              Città disponibili: Milano, Roma, Firenze, Napoli, Torino
+              {availableCities.length > 0
+                ? `${availableCities.length} città disponibili`
+                : "Caricamento città..."}
             </Text>
           </View>
         )}
