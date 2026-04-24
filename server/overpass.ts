@@ -48,6 +48,7 @@ export async function searchRestaurantsByLocation(
   try {
     // Costruisci la query Overpass per cercare ristoranti
     const query = `
+      [out:json];
       [bbox:${latitude - radiusKm / 111},${longitude - radiusKm / 111},${latitude + radiusKm / 111},${longitude + radiusKm / 111}];
       (
         node["amenity"="restaurant"];
@@ -70,7 +71,14 @@ export async function searchRestaurantsByLocation(
       throw new Error(`Overpass API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Response text:', text);
+      throw new Error(`Failed to parse Overpass API response: ${e}`);
+    }
 
     // Processa i risultati
     const restaurants: Restaurant[] = [];
