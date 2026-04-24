@@ -60,6 +60,10 @@ export async function searchRestaurantsByLocation(
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       body: query,
+      headers: {
+        'User-Agent': 'SmartAssistantApp/1.0 (+https://github.com/andcas18237/ManusTest)',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     });
 
     if (!response.ok) {
