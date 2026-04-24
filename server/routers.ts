@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { COOKIE_NAME } from "../shared/const";
+import { searchRestaurantsByLocation, filterByPrice, filterByCuisine } from "./overpass";
 
 export const appRouter = router({
   system: systemRouter,
@@ -90,6 +91,41 @@ export const appRouter = router({
     delete: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(({ input }) => db.deleteRecipe(input.id)),
+  }),
+
+  restaurants: router({
+    searchByLocation: publicProcedure
+      .input(
+        z.object({
+          latitude: z.number(),
+          longitude: z.number(),
+          radiusKm: z.number().optional().default(20),
+          maxPrice: z.number().optional(),
+          cuisine: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        try {
+          let restaurants = await searchRestaurantsByLocation(
+            input.latitude,
+            input.longitude,
+            input.radiusKm
+          );
+
+          if (input.maxPrice) {
+            restaurants = filterByPrice(restaurants, input.maxPrice);
+          }
+          if (input.cuisine) {
+            restaurants = filterByCuisine(restaurants, input.cuisine);
+          }
+
+          return restaurants;
+        } catch (error) {
+          throw new Error(
+            `Errore nella ricerca di ristoranti: ${error instanceof Error ? error.message : "Errore sconosciuto"}`
+          );
+        }
+      }),
   }),
 });
 
