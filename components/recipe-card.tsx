@@ -59,22 +59,32 @@ export function RecipeCard({ id, name, prepTime, difficulty, onPress }: RecipeCa
       onPressOut={handlePressOut}
     >
       <Animated.View style={animatedStyle}>
-        <View className="bg-surface rounded-xl p-4 mb-4 border border-border shadow-sm">
-          {/* Header */}
-          <View className="flex-row justify-between items-start mb-3">
-            <Text className="text-lg font-bold text-foreground flex-1 pr-2">{name}</Text>
-            <View className={cn("px-3 py-1 rounded-full", getDifficultyColor(difficulty))}>
+        <View
+          className="mb-4 rounded-[28px] border border-border bg-surface p-5"
+          style={{
+            shadowColor: "#020617",
+            shadowOpacity: 0.08,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 3,
+          }}
+        >
+          <View className="mb-4 flex-row items-start justify-between gap-3">
+            <View className="flex-1">
+              <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-muted">Ricetta</Text>
+              <Text className="mt-2 text-xl font-bold leading-7 text-foreground">{name}</Text>
+            </View>
+            <View className={cn("rounded-full px-3 py-1.5", getDifficultyColor(difficulty))}>
               <Text className="text-xs font-semibold text-white capitalize">{difficulty}</Text>
             </View>
           </View>
 
-          {/* Footer */}
-          <View className="flex-row items-center justify-between pt-3 border-t border-border/30">
-            <View className="flex-row items-center gap-1">
-              <Text className="text-sm text-muted">⏱️</Text>
-              <Text className="text-sm font-medium text-muted">{prepTime} min</Text>
+          <View className="flex-row items-center justify-between rounded-2xl bg-background px-4 py-3">
+            <View>
+              <Text className="text-xs uppercase tracking-[1.2px] text-muted">Tempo medio</Text>
+              <Text className="mt-1 text-base font-semibold text-foreground">{prepTime} min</Text>
             </View>
-            <Text className="text-xs text-primary font-semibold">Visualizza →</Text>
+            <Text className="text-sm font-semibold text-primary">Apri dettagli</Text>
           </View>
         </View>
       </Animated.View>

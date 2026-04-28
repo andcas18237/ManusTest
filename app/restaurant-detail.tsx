@@ -1,6 +1,7 @@
-import { ScrollView, Text, View, Pressable } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
+import { BackButton, EmptyState, MetricTile, PageHeader, ResponsiveContainer, SectionTitle, Surface } from "@/components/ui/app-ui";
 
 interface RestaurantDetail {
   id: number;
@@ -80,72 +81,62 @@ export default function RestaurantDetailScreen() {
 
   if (!restaurant) {
     return (
-      <ScreenContainer className="justify-center items-center">
-        <Text className="text-foreground">Ristorante non trovato</Text>
-        <Pressable
-          onPress={() => router.back()}
-          className="mt-4 bg-primary px-6 py-3 rounded-lg"
-        >
-          <Text className="text-white font-semibold">Indietro</Text>
-        </Pressable>
+      <ScreenContainer className="justify-center items-center px-4">
+        <ResponsiveContainer>
+          <EmptyState
+            icon="restaurant"
+            title="Ristorante non trovato"
+            description="La scheda selezionata non e al momento disponibile."
+          />
+          <BackButton onPress={() => router.back()} />
+        </ResponsiveContainer>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer className="px-4 py-4">
+    <ScreenContainer className="px-4 pt-4">
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <Pressable onPress={() => router.back()} className="mb-4">
-          <Text className="text-primary font-semibold">← Indietro</Text>
-        </Pressable>
+        <ResponsiveContainer className="gap-5 pb-16">
+          <BackButton onPress={() => router.back()} />
+          <PageHeader title={restaurant.name} description="Scheda informativa con metrica, contatti e menu in un layout piu raffinato." />
 
-        {/* Title */}
-        <Text className="text-3xl font-bold text-foreground mb-2">{restaurant.name}</Text>
-
-        {/* Rating and Price */}
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-lg text-primary font-semibold">⭐ {restaurant.rating}</Text>
-          <Text className="text-lg font-semibold text-foreground">
-            €{restaurant.avgPrice}/persona
-          </Text>
-        </View>
-
-        {/* Contact Info */}
-        <View className="bg-surface rounded-lg p-4 mb-6 border border-border">
-          <Text className="text-sm font-semibold text-foreground mb-3">Informazioni</Text>
-
-          <View className="mb-3">
-            <Text className="text-xs text-muted mb-1">📍 Indirizzo</Text>
-            <Text className="text-foreground">{restaurant.address}</Text>
+          <View className="flex-row flex-wrap gap-3">
+            <MetricTile label="Rating" value={restaurant.rating.toFixed(1)} accent />
+            <MetricTile label="Prezzo medio" value={`EUR ${restaurant.avgPrice}`} />
+            <MetricTile label="Distanza" value={`${restaurant.distance} km`} />
           </View>
 
-          <View className="mb-3">
-            <Text className="text-xs text-muted mb-1">📞 Telefono</Text>
-            <Text className="text-foreground">{restaurant.phone}</Text>
-          </View>
-
-          <View className="mb-3">
-            <Text className="text-xs text-muted mb-1">🕐 Orari</Text>
-            <Text className="text-foreground">{restaurant.hours}</Text>
-          </View>
-
-          <View>
-            <Text className="text-xs text-muted mb-1">📍 Distanza</Text>
-            <Text className="text-foreground">{restaurant.distance}km</Text>
-          </View>
-        </View>
-
-        {/* Menu */}
-        <View className="mb-6">
-          <Text className="text-xl font-bold text-foreground mb-3">Menu Disponibile</Text>
-          {restaurant.dishes.map((dish, index) => (
-            <View key={index} className="flex-row items-center py-2 border-b border-border">
-              <Text className="text-primary font-bold mr-3">•</Text>
-              <Text className="text-foreground">{dish}</Text>
+          <Surface className="p-5">
+            <SectionTitle title="Informazioni" />
+            <View className="mt-4 gap-4">
+              <View>
+                <Text className="text-xs uppercase tracking-[1.2px] text-muted">Indirizzo</Text>
+                <Text className="mt-1 text-sm leading-6 text-foreground">{restaurant.address}</Text>
+              </View>
+              <View>
+                <Text className="text-xs uppercase tracking-[1.2px] text-muted">Telefono</Text>
+                <Text className="mt-1 text-sm leading-6 text-foreground">{restaurant.phone}</Text>
+              </View>
+              <View>
+                <Text className="text-xs uppercase tracking-[1.2px] text-muted">Orari</Text>
+                <Text className="mt-1 text-sm leading-6 text-foreground">{restaurant.hours}</Text>
+              </View>
             </View>
-          ))}
-        </View>
+          </Surface>
+
+          <Surface className="p-5">
+            <SectionTitle title="Menu disponibile" description={`${restaurant.dishes.length} piatti`} />
+            <View className="mt-4 gap-3">
+              {restaurant.dishes.map((dish, index) => (
+                <View key={index} className="flex-row items-center gap-3 rounded-2xl bg-background px-4 py-3">
+                  <View className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <Text className="flex-1 text-sm text-foreground">{dish}</Text>
+                </View>
+              ))}
+            </View>
+          </Surface>
+        </ResponsiveContainer>
       </ScrollView>
     </ScreenContainer>
   );

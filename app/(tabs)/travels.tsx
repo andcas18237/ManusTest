@@ -1,10 +1,9 @@
-import { ScrollView, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
-import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
-import { skipToken } from "@tanstack/react-query";
+import { EmptyState, InfoBanner, MetricTile, PageHeader, PrimaryButton, ResponsiveContainer, SectionTitle, Surface } from "@/components/ui/app-ui";
+import { useAvailableCities, useTravelCalculator } from "@/hooks/use-app-data";
 
 interface TravelResult {
   distance: number;
@@ -24,21 +23,8 @@ export default function TravelsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch available cities
-  const { data: availableCities = [] } = trpc.travels.availableCities.useQuery();
-
-  // Calculate travel using tRPC
-  const calculateTravelMutation = trpc.travels.calculate.useQuery(
-    departure && destination
-      ? {
-          departure,
-          destination,
-          travelType,
-        }
-      : skipToken,
-    {
-      enabled: false,
-    }
-  );
+  const { data: availableCities = [] } = useAvailableCities();
+  const calculateTravelMutation = useTravelCalculator();
 
   const handleCalculate = async () => {
     setError(null);
@@ -46,12 +32,8 @@ export default function TravelsScreen() {
     setSearched(true);
 
     try {
-      const response = await calculateTravelMutation.refetch();
-      if (response.data) {
-        setResult(response.data);
-      } else if (response.error) {
-        setError(response.error.message || "Errore nel calcolo del viaggio");
-      }
+      const response = await calculateTravelMutation.calculate(departure, destination, travelType);
+      setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
     } finally {
@@ -73,134 +55,116 @@ export default function TravelsScreen() {
   };
 
   return (
-    <ScreenContainer className="px-4 py-4">
+    <ScreenContainer className="px-4 pt-4">
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text className="text-3xl font-bold text-foreground mb-4">Costi Viaggio</Text>
+        <ResponsiveContainer className="gap-5 pb-28">
+          <PageHeader
+            eyebrow="Trip planner"
+            title="Costi viaggio"
+            description="Un calcolatore piu elegante e leggibile per confrontare spostamenti in auto, treno o aereo."
+          />
 
-        {/* Input Section */}
-        <View className="bg-surface rounded-lg p-4 mb-6 border border-border">
-          <Text className="text-sm font-semibold text-foreground mb-3">Calcola Costo</Text>
+          <Surface className="p-5">
+            <SectionTitle title="Calcola costo" description="Inserisci tratta e mezzo di trasporto." />
 
-          <Text className="text-xs text-muted mb-1">Partenza</Text>
-          <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
-            <Picker
-              selectedValue={departure}
-              onValueChange={(itemValue: string) => setDeparture(itemValue)}
-              style={{ color: "#11181C" }}
-            >
-              <Picker.Item label="Seleziona città..." value="" />
-              {availableCities.map((city: string) => (
-                <Picker.Item key={city} label={city} value={city} />
-              ))}
-            </Picker>
-          </View>
-
-          <Text className="text-xs text-muted mb-1">Destinazione</Text>
-          <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
-            <Picker
-              selectedValue={destination}
-              onValueChange={(itemValue: string) => setDestination(itemValue)}
-              style={{ color: "#11181C" }}
-            >
-              <Picker.Item label="Seleziona città..." value="" />
-              {availableCities.map((city: string) => (
-                <Picker.Item key={city} label={city} value={city} />
-              ))}
-            </Picker>
-          </View>
-
-          <Text className="text-xs text-muted mb-1">Tipo di viaggio</Text>
-          <View className="bg-background border border-border rounded-lg mb-4 overflow-hidden">
-            <Picker
-              selectedValue={travelType}
-              onValueChange={(itemValue: string) => setTravelType(itemValue as "auto" | "treno" | "aereo")}
-              style={{ color: "#11181C" }}
-            >
-              <Picker.Item label="Auto" value="auto" />
-              <Picker.Item label="Treno" value="treno" />
-              <Picker.Item label="Aereo" value="aereo" />
-            </Picker>
-          </View>
-
-          <Pressable
-            onPress={handleCalculate}
-            disabled={!departure || !destination || loading}
-            style={({ pressed }) => [
-              {
-                opacity: pressed && departure && destination ? 0.8 : 1,
-              },
-            ]}
-            className={cn(
-              "rounded-lg py-3 items-center",
-              departure && destination ? "bg-primary" : "bg-muted"
-            )}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-semibold">Calcola</Text>
-            )}
-          </Pressable>
-        </View>
-
-        {/* Error Message */}
-        {error && (
-          <View className="bg-error/10 border border-error rounded-lg p-3 mb-4">
-            <Text className="text-error text-sm">{error}</Text>
-          </View>
-        )}
-
-        {/* Results Section */}
-        {searched && result ? (
-          <View className="bg-surface rounded-lg p-4 border border-border">
-            <Text className="text-lg font-bold text-foreground mb-4">Risultati</Text>
-
-            <View className="mb-4">
-              <Text className="text-xs text-muted mb-1">📏 Distanza</Text>
-              <Text className="text-2xl font-bold text-primary">{result.distance} km</Text>
+            <Text className="mt-5 mb-2 text-sm font-semibold text-foreground">Partenza</Text>
+            <View className="overflow-hidden rounded-2xl border border-border bg-background">
+              <Picker
+                selectedValue={departure}
+                onValueChange={(itemValue: string) => setDeparture(itemValue)}
+                style={{ color: "#0f172a" }}
+              >
+                <Picker.Item label="Seleziona citta..." value="" />
+                {availableCities.map((city: string) => (
+                  <Picker.Item key={city} label={city} value={city} />
+                ))}
+              </Picker>
             </View>
 
-            <View className="mb-4">
-              <Text className="text-xs text-muted mb-1">🕐 Tempo stimato</Text>
-              <Text className="text-2xl font-bold text-primary">
-                {Math.floor(result.duration / 60)}h {result.duration % 60}m
-              </Text>
+            <Text className="mt-4 mb-2 text-sm font-semibold text-foreground">Destinazione</Text>
+            <View className="overflow-hidden rounded-2xl border border-border bg-background">
+              <Picker
+                selectedValue={destination}
+                onValueChange={(itemValue: string) => setDestination(itemValue)}
+                style={{ color: "#0f172a" }}
+              >
+                <Picker.Item label="Seleziona citta..." value="" />
+                {availableCities.map((city: string) => (
+                  <Picker.Item key={city} label={city} value={city} />
+                ))}
+              </Picker>
             </View>
 
-            <View className="mb-4 bg-background rounded-lg p-3">
-              <Text className="text-xs text-muted mb-2">💰 Costo totale</Text>
-              <Text className="text-3xl font-bold text-foreground">€{result.cost}</Text>
-              <Text className="text-xs text-muted mt-2">
-                Tipo: {getTravelTypeLabel(result.travelType)}
-              </Text>
+            <Text className="mt-4 mb-2 text-sm font-semibold text-foreground">Tipo di viaggio</Text>
+            <View className="overflow-hidden rounded-2xl border border-border bg-background">
+              <Picker
+                selectedValue={travelType}
+                onValueChange={(itemValue: string) => setTravelType(itemValue as "auto" | "treno" | "aereo")}
+                style={{ color: "#0f172a" }}
+              >
+                <Picker.Item label="Auto" value="auto" />
+                <Picker.Item label="Treno" value="treno" />
+                <Picker.Item label="Aereo" value="aereo" />
+              </Picker>
             </View>
 
-            {result.travelType === "auto" && result.tollCost > 0 && (
-              <View className="bg-warning bg-opacity-10 rounded-lg p-3 border border-warning">
-                <Text className="text-xs text-warning font-semibold mb-1">⚠️ Pedaggi</Text>
-                <Text className="text-lg font-bold text-warning">€{result.tollCost}</Text>
-                <Text className="text-xs text-muted mt-1">
-                  Costo stimato per i caselli autostradali
-                </Text>
+            <PrimaryButton
+              label="Calcola"
+              onPress={handleCalculate}
+              disabled={!departure || !destination}
+              loading={loading || calculateTravelMutation.isLoading}
+              icon="timeline"
+              className="mt-5"
+            />
+          </Surface>
+
+          {error ? <InfoBanner tone="error" title="Errore nel calcolo" description={error} /> : null}
+
+          {searched && result ? (
+            <Surface className="p-5">
+              <SectionTitle title="Risultati" description={`Modalita selezionata: ${getTravelTypeLabel(result.travelType)}`} />
+
+              <View className="mt-5 flex-row flex-wrap gap-3">
+                <MetricTile label="Distanza" value={`${result.distance} km`} accent />
+                <MetricTile
+                  label="Durata"
+                  value={`${Math.floor(result.duration / 60)}h ${result.duration % 60}m`}
+                />
               </View>
-            )}
-          </View>
-        ) : searched && !result ? (
-          <View className="flex-1 justify-center items-center py-8">
-            <Text className="text-muted text-center">Errore nel calcolo del viaggio</Text>
-          </View>
-        ) : (
-          <View className="flex-1 justify-center items-center py-8">
-            <Text className="text-muted text-center">
-              Seleziona partenza e destinazione per calcolare i costi
-            </Text>
-            <Text className="text-xs text-muted text-center mt-2">
-              {availableCities.length > 0
-                ? `${availableCities.length} città disponibili`
-                : "Caricamento città..."}
-            </Text>
-          </View>
-        )}
+
+              <View className="mt-4 rounded-[24px] bg-background p-5">
+                <Text className="text-xs uppercase tracking-[1.2px] text-muted">Costo totale</Text>
+                <Text className="mt-2 text-4xl font-bold text-foreground">EUR {result.cost}</Text>
+              </View>
+
+              {result.travelType === "auto" && result.tollCost > 0 ? (
+                <View className="mt-4">
+                  <InfoBanner
+                    tone="warning"
+                    title={`Pedaggi stimati: EUR ${result.tollCost}`}
+                    description="Include il costo stimato dei caselli autostradali lungo il percorso."
+                  />
+                </View>
+              ) : null}
+            </Surface>
+          ) : searched && !result ? (
+            <EmptyState
+              icon="warning-amber"
+              title="Nessun risultato disponibile"
+              description="Riprova controllando i dati inseriti oppure scegli una combinazione diversa."
+            />
+          ) : (
+            <EmptyState
+              icon="route"
+              title="Pronto per il calcolo"
+              description={
+                availableCities.length > 0
+                  ? `${availableCities.length} citta disponibili per comporre la tratta.`
+                  : "Sto caricando l'elenco delle citta disponibili."
+              }
+            />
+          )}
+        </ResponsiveContainer>
       </ScrollView>
     </ScreenContainer>
   );

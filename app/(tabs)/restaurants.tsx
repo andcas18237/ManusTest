@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { FlatList, Pressable, Text, View, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useLocation } from '@/hooks/use-location';
-import { trpc } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
-import { skipToken } from '@tanstack/react-query';
+import { EmptyState, FilterChip, InfoBanner, LoadingState, PageHeader, PrimaryButton, ResponsiveContainer, SectionTitle, Surface } from '@/components/ui/app-ui';
+import { useRestaurants } from '@/hooks/use-app-data';
+import { useRouter } from 'expo-router';
 
 interface Restaurant {
   id: string;
@@ -16,158 +16,91 @@ interface Restaurant {
 }
 
 export default function RestaurantsScreen() {
+  const router = useRouter();
   const { location, loading: locationLoading, error: locationError, requestPermission } = useLocation();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
-  const { data: restaurants = [], isLoading: loading, error: queryError } = trpc.restaurants.searchByLocation.useQuery(
-    location
-      ? {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          radiusKm: 20,
-          maxPrice,
-        }
-      : skipToken
-  );
+  const { data: restaurants = [], isLoading: loading, error: queryError } = useRestaurants(location, maxPrice);
 
   const error = queryError?.message || queryError?.toString() || null;
 
   const renderRestaurant = ({ item }: { item: Restaurant }) => (
     <Pressable
-      onPress={() => {}}
-      style={({ pressed }) => [
-        {
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
+      onPress={() =>
+        router.push({
+          pathname: "/restaurant-detail",
+          params: { id: item.id },
+        })
+      }
+      style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1 }]}
     >
-      <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
-        <Text className="text-lg font-bold text-foreground">{item.name}</Text>
-        <Text className="text-sm text-muted mt-1">
-          📍 {item.distance.toFixed(1)} km di distanza
-        </Text>
+      <Surface className="mb-3 p-5">
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-foreground">{item.name}</Text>
+            <Text className="mt-1 text-sm text-muted">{item.distance.toFixed(1)} km di distanza</Text>
+          </View>
+          <View className="rounded-full bg-primary/10 px-3 py-1.5">
+            <Text className="text-xs font-semibold text-primary">Vicino a te</Text>
+          </View>
+        </View>
         {item.tags?.cuisine && (
-          <Text className="text-sm text-muted mt-1">🍽️ {item.tags.cuisine}</Text>
+          <Text className="mt-4 text-sm text-foreground">Cucina: {item.tags.cuisine}</Text>
         )}
         {item.tags?.['price_range'] && (
-          <Text className="text-sm text-muted mt-1">💰 {item.tags['price_range']}</Text>
+          <Text className="mt-1 text-sm text-muted">Budget: {item.tags['price_range']}</Text>
         )}
-      </View>
+      </Surface>
     </Pressable>
   );
 
   return (
     <ScreenContainer className="p-4">
-      <View className="gap-4 flex-1">
-        {/* Header */}
-        <View>
-          <Text className="text-3xl font-bold text-foreground">Ristoranti</Text>
-          <Text className="text-sm text-muted mt-1">Entro 20 km da te</Text>
-        </View>
+      <ResponsiveContainer className="flex-1 gap-5 pb-28">
+        <PageHeader
+          eyebrow="Nearby"
+          title="Ristoranti"
+          description="Suggerimenti locali con un look piu ordinato, chiaro e leggibile su ogni formato."
+        />
 
-        {/* Location Button */}
         {!location && (
-          <Pressable
-            onPress={requestPermission}
-            disabled={locationLoading}
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <View className="bg-primary rounded-lg p-4">
-              <Text className="text-white font-semibold text-center">
-                {locationLoading ? 'Caricamento...' : 'Abilita Geolocalizzazione'}
-              </Text>
-            </View>
-          </Pressable>
+          <Surface className="p-5">
+            <SectionTitle
+              title="Attiva la posizione"
+              description="Serve per mostrare ristoranti pertinenti entro 20 km dalla tua area."
+            />
+            <PrimaryButton
+              label={locationLoading ? 'Caricamento...' : 'Abilita geolocalizzazione'}
+              onPress={requestPermission}
+              disabled={locationLoading}
+              icon="my-location"
+              className="mt-4"
+            />
+          </Surface>
         )}
 
-        {/* Error Messages */}
         {locationError && (
-          <View className="bg-error/10 border border-error rounded-lg p-3">
-            <Text className="text-error text-sm">{locationError}</Text>
-          </View>
+          <InfoBanner tone="error" title="Permesso posizione non disponibile" description={locationError} />
         )}
 
         {error && (
-          <View className="bg-error/10 border border-error rounded-lg p-3">
-            <Text className="text-error text-sm">{error}</Text>
-          </View>
+          <InfoBanner tone="error" title="Ricerca non riuscita" description={error} />
         )}
 
-        {/* Filters */}
         {location && (
-          <View className="gap-2">
-            <Text className="text-sm font-semibold text-foreground">Filtri Prezzo</Text>
+          <Surface className="gap-4 p-5">
+            <SectionTitle title="Filtri prezzo" description="Affina rapidamente il budget medio desiderato." />
             <View className="flex-row gap-2">
-              <Pressable
-                onPress={() => setMaxPrice(maxPrice === 2 ? undefined : 2)}
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <View
-                  className={cn(
-                    'px-3 py-2 rounded-full border',
-                    maxPrice === 2
-                      ? 'bg-primary border-primary'
-                      : 'bg-surface border-border'
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      'text-sm font-medium',
-                      maxPrice === 2 ? 'text-white' : 'text-foreground'
-                    )}
-                  >
-                    €€
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setMaxPrice(maxPrice === 3 ? undefined : 3)}
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <View
-                  className={cn(
-                    'px-3 py-2 rounded-full border',
-                    maxPrice === 3
-                      ? 'bg-primary border-primary'
-                      : 'bg-surface border-border'
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      'text-sm font-medium',
-                      maxPrice === 3 ? 'text-white' : 'text-foreground'
-                    )}
-                  >
-                    €€€
-                  </Text>
-                </View>
-              </Pressable>
+              <FilterChip label="€€" selected={maxPrice === 2} onPress={() => setMaxPrice(maxPrice === 2 ? undefined : 2)} />
+              <FilterChip label="€€€" selected={maxPrice === 3} onPress={() => setMaxPrice(maxPrice === 3 ? undefined : 3)} />
             </View>
-          </View>
+          </Surface>
         )}
 
-        {/* Loading */}
         {loading && (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#0a7ea4" />
-            <Text className="text-muted mt-2">Ricerca ristoranti...</Text>
-          </View>
+          <LoadingState label="Ricerca ristoranti..." />
         )}
 
-        {/* Restaurant List */}
         {!loading && location && (
           <>
             {restaurants.length > 0 ? (
@@ -175,20 +108,25 @@ export default function RestaurantsScreen() {
                 data={restaurants}
                 renderItem={renderRestaurant}
                 keyExtractor={(item) => item.id}
-                scrollEnabled={true}
-                nestedScrollEnabled={true}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 8 }}
+                ListHeaderComponent={
+                  <View className="mb-4">
+                    <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-primary">Entro 20 km</Text>
+                    <Text className="mt-2 text-sm text-muted">{restaurants.length} risultati disponibili</Text>
+                  </View>
+                }
               />
             ) : (
-              <View className="flex-1 justify-center items-center">
-                <Text className="text-muted text-center">
-                  Nessun ristorante trovato entro 20 km
-                </Text>
-              </View>
+              <EmptyState
+                icon="restaurant"
+                title="Nessun ristorante trovato"
+                description="Prova a cambiare area o ad allargare i criteri del filtro prezzo."
+              />
             )}
           </>
         )}
-      </View>
+      </ResponsiveContainer>
     </ScreenContainer>
   );
 }
